@@ -14,12 +14,16 @@ mail = {
     "receiver": {
         "name": "Status-Mail",
         "email": "status@test.com"
+    },
+    "attachments": {
+        "1": "/var/log/rsnapshot.log",
+        "2": "/var/log/backupper.log"
     }
 }
 
 config = {
     "mail": {
-        "prefix": "[Backup]",
+        "prefix": "[%status%]",
         "subject": "Test"
     },
     "server": {
@@ -27,7 +31,10 @@ config = {
         "smtp_port": 587
     },
     "logging": {
-        "file": "mailman.log",
+        "path": "/var/log/mailman.log",
         "level": "INFO"
-    }
+    },
+    "template_default": "default",
+    "template_path": "/script/mailman", # don't set '/' at the end of path!
+    "max_attachment_size": "2000000"    # 2MB in Bytes
 }
