@@ -1,8 +1,6 @@
 # Scripts
 
-This is a *collection* of scripts that I either use daily or that run on servers and keep the workflow smooth.
-
-
+This is a *collection* of scripts I wrote for my own and/or for production environments. 🧙‍♂️
 
 
 
