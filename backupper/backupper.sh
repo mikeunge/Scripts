@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # backupper.sh
-# version: 1.0.2.3
+# version: 1.0.2.4
 #
 # Author:	Ungerböck Michele
 # Github:	github.com/mikeunge
@@ -138,11 +138,15 @@ log "Starting backup job ... [$JOB]" "INFO"
         log "rSnapshot didn't return any output.." "WARNING"
     fi
 } || {
-    log "Something went wrong with the backup... Please check the rSnapshot logs.." "ERROR"
-    panic 1
+    # Built a wrapper around a rsnapshot error that happens if a file changes while rsnapshot runs (return_val: 2).
+    if [ $output -eq 0 ] -eq 2 ]; then
+        log "Backup complete." "INFO"
+        script_end=`date +"%Y-%m-%d %T"`
+    else
+        log "Something went wrong with the backup... Please check the rSnapshot logs.." "ERROR"
+        panic 1
+    fi
 }
 
-script_end=`date +"%Y-%m-%d %T"`
-log "Backup done." "INFO"
-log "Start: $script_start :: End: $script_end"
+log "Start: $script_start :: End: $script_end" "INFO"
 panic 0
