@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # backupper.sh
-# version: 1.0.2.4
+# version: 1.0.2.5
 #
 # Author:	Ungerböck Michele
 # Github:	github.com/mikeunge
@@ -18,7 +18,8 @@ CONFIG_FILE="/etc/backupper.conf"   # change this path if needed.
 if [ -f "$CONFIG_FILE" ]; then
     source $CONFIG_FILE
 else
-    echo "Configuration file doesn't exist! [$CONFIG_FILE]"
+    # TODO: send_mail on failure.
+    echo "Configuration file doesn't exist! [$CONFIG_FILE]" > backupper.err.log
     exit 1
 fi
 
@@ -42,8 +43,18 @@ log() {
 }
 
 send_email() {
-    log "Sending email..." "DEBUG"
-    mutt -s "$SENDER [$status] (exec=$JOB) - $start_date" -a $RSNAPSHOT_LOG_FILE -- $DEST_EMAIL < $LOG_FILE
+    log "Sending email via $MAIL_CLIENT..." "DEBUG"
+    # Check if the mail_client is defined correctly.
+    if $MAIL_CLIENT == "sendmail"; then
+        mail -A $RSNAPSHOT_LOG_FILE -s "$SENDER [$status] (exec=$JOB) - $start_date" $DEST_EMAIL < $LOG_FILE
+    elif $MAIL_CLIENT == "mail"; then
+        mail -A $RSNAPSHOT_LOG_FILE -s "$SENDER [$status] (exec=$JOB) - $start_date" $DEST_EMAIL < $LOG_FILE
+    elif $MAIL_CLIENT == "mutt"; then
+        mutt -s "$SENDER [$status] (exec=$JOB) - $start_date" -a $RSNAPSHOT_LOG_FILE -- $DEST_EMAIL < $LOG_FILE
+    else
+        log "Could not send the e-mail; Mail client ($MAIL_CLIENT) is not/or wrong defined. Please check the config. ($CONFIG_FILE)" "ERROR"
+        panic 1
+    fi
 }
 
 panic() {
