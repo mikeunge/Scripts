@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # backupper.sh
-# version: 1.0.2.7
+# version: 1.0.2.8
 #
 # Author:	Ungerböck Michele
 # Github:	github.com/mikeunge
@@ -52,8 +52,8 @@ send_email() {
     elif $MAIL_CLIENT == "mutt"; then
         mutt -s "$SENDER [$status] (exec=$JOB) - $start_date" -a $RSNAPSHOT_LOG_FILE -- $DEST_EMAIL < $LOG_FILE
     else
-        log "Could not send the e-mail; Mail client ($MAIL_CLIENT) is not/or wrong defined. Please check the config. ($CONFIG_FILE)" "ERROR"
-        panic 1
+        log "Could not send the e-mail; Mail client ($MAIL_CLIENT) is not or wrong defined. Please check the config. ($CONFIG_FILE)" "ERROR"
+        panic 2     # Special case that kills the script entirely without trying to send the e-mail (again).
     fi
 }
 
@@ -64,12 +64,19 @@ panic() {
     else
         error=$1
     fi
-    # Check if error is true (0).
-    if (( $error == 0 )); then
+
+    # Check if an error occured.
+    if [[ $error == 1 ]]; then
        status="error"
        log "An error occured, please check the mail content and/or the attachment for more informations." "ERROR"
        send_email
        exit 1
+    # This is a special case (panic 2) that only gets triggered from the send_email function.
+    # The check prevents the script from an endless loop. (=> dosn't call the send_email function like the other cases)
+    elif [[ $error == 2 ]]; then
+        status="error"
+        log "Something went wrong while sending the status mail, please check if everything is configured correctly and sending e-mails is possible from command line." "ERROR"
+        exit 1
     else
        status="success"
        log "Backup was successfully created!" "INFO"
@@ -115,7 +122,6 @@ fi
 # Try to mount the network drive.
 i=0
 while [[ $i < $TRIES ]]; do
-    # TODO: Check if the mounting point exists!
     if ! grep -q "$MOUNT" /proc/mounts; then
         { # Try and mount the network drive.
             log "Mounting share ... [$SHARE]" "INFO"
