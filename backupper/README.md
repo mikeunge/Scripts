@@ -1,3 +1,22 @@
-# Backupper
+# 💾 backupper.sh
 
-The '*backupper.sh*' script connects to network shares and executes *rSnapshot* backups.
+### About
+
+***backupper.sh*** is a backup script designed to make sure everything is in place and executed in the correct order. It uses *'**rsnapshot**'* for the backups and *'**mutt**'* or *'**sendmail**'* to send status e-mails. 
+
+The script is highly configurarable to suit most needs.
+
+
+
+### Requirements
+
+The script needs **bash**, **smb/cifs**, **rsnapshot** and an *e-mail* client like **mutt**.
+
+
+
+### Todo
+
+- [ ] Better documentation
+- [x] Add ***CHANGELOG.md***
+- [ ] More configuration possibilities
+- [ ] Re-Do the ***README.md*** file

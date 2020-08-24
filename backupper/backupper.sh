@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # backupper.sh
-# version: 1.0.2.8
+# version: 1.0.3
 #
 # Author:	Ungerböck Michele
 # Github:	github.com/mikeunge
@@ -44,17 +44,20 @@ log() {
 
 send_email() {
     log "Sending email via $MAIL_CLIENT..." "DEBUG"
+    mail_str=""
     # Check if the mail_client is defined correctly.
-    if $MAIL_CLIENT == "sendmail"; then
-        mail -A $RSNAPSHOT_LOG_FILE -s "$SENDER [$status] (exec=$JOB) - $start_date" $DEST_EMAIL < $LOG_FILE
-    elif $MAIL_CLIENT == "mail"; then
-        mail -A $RSNAPSHOT_LOG_FILE -s "$SENDER [$status] (exec=$JOB) - $start_date" $DEST_EMAIL < $LOG_FILE
-    elif $MAIL_CLIENT == "mutt"; then
-        mutt -s "$SENDER [$status] (exec=$JOB) - $start_date" -a $RSNAPSHOT_LOG_FILE -- $DEST_EMAIL < $LOG_FILE
-    else
-        log "Could not send the e-mail; Mail client ($MAIL_CLIENT) is not or wrong defined. Please check the config. ($CONFIG_FILE)" "ERROR"
-        panic 2     # Special case that kills the script entirely without trying to send the e-mail (again).
-    fi
+    case $MAIL_CLIENT in
+        "sendmail"|"mail") 
+            mail_str='mail -A $RSNAPSHOT_LOG_FILE -s "$SENDER [$status] (exec=$JOB) - $start_date" $DEST_EMAIL < $LOG_FILE' ;;
+        "mutt") 
+            mail_str='mutt -s "$SENDER [$status] (exec=$JOB) - $start_date" -a $RSNAPSHOT_LOG_FILE -- $DEST_EMAIL < $LOG_FILE' ;;
+        *)
+            log "Could not send the e-mail; Mail client ($MAIL_CLIENT) is not (or wrong) defined. Please check the config. ($CONFIG_FILE)" "ERROR"
+            panic 2     # Special case that kills the script entirely without trying to send the e-mail (again).
+        ;;
+    esac
+    # Send the email;
+    eval $mail_str
 }
 
 panic() {
@@ -64,25 +67,29 @@ panic() {
     else
         error=$1
     fi
-
-    # Check if an error occured.
-    if [[ $error == 1 ]]; then
-       status="error"
-       log "An error occured, please check the mail content and/or the attachment for more informations." "ERROR"
-       send_email
-       exit 1
-    # This is a special case (panic 2) that only gets triggered from the send_email function.
-    # The check prevents the script from an endless loop. (=> dosn't call the send_email function like the other cases)
-    elif [[ $error == 2 ]]; then
-        status="error"
-        log "Something went wrong while sending the status mail, please check if everything is configured correctly and sending e-mails is possible from command line." "ERROR"
-        exit 1
-    else
-       status="success"
-       log "Backup was successfully created!" "INFO"
-       send_email
-       exit 0
-    fi
+    # Check for different error cases.
+    case $error in
+        1)
+            status="error"
+            log "An error occured, please check the mail content and/or the attachment for more informations." "ERROR"
+            send_email
+            exit 1;;
+        2)  # This is a special case (panic 2) that only gets triggered from the send_email function.
+            # The check prevents the script from an endless loop. (=> dosn't call the send_email function like the other cases)
+            status="error"
+            log "Something went wrong while sending the status mail, please check if everything is configured correctly and sending e-mails is possible from command line." "ERROR"
+            exit 1 ;;
+        0)
+            status="success"
+            log "Backup was successfully created!" "INFO"
+            send_email
+            exit 0 ;;
+        *)  # This should actually never happen.
+            status="warning"
+            log "A warning was raised, please check the mail content and/or the attachment for more informations." "WARNING"
+            send_email
+            exit 1 ;;
+    esac
 }
 
 # Check if the log_rotate is set.
@@ -123,7 +130,7 @@ fi
 i=0
 while [[ $i < $TRIES ]]; do
     if ! grep -q "$MOUNT" /proc/mounts; then
-        { # Try and mount the network drive.
+        { # Try to mount the network drive.
             log "Mounting share ... [$SHARE]" "INFO"
             mount -t cifs -o username="$USER",password="$PASSWORD" "$SHARE" "$MOUNT" > /dev/null 2>&1
             log "Network share successfully mounted!" "INFO"
@@ -141,6 +148,80 @@ while [[ $i < $TRIES ]]; do
         break
     fi
 done
+
+# Compression implementation.
+if [[ $COMPRESS == 1 ]]; then
+    # Define a 'local' error count.
+    error=0
+
+    # Check if source string is NOT empty.
+	if [ -z $COMP_SRC ]; then
+		log "[COMP_SRC] is not defined!" "ERROR"
+        error=1
+	fi
+
+	if ! [ -d $COMP_TMP ]; then
+		log "TMP folder does not exist, creating '$COMP_TMP'" "INFO"
+		{
+			mkdir $COMP_TMP
+		} || {
+			log "Couldn't create folder '$COMP_TMP'" "ERROR"
+			error=1
+		}
+	fi
+
+	# Check if any errors occured.
+	if [[ $error == 1 ]]; then
+		log "Something went wrong with the COMP_SRC or the COMP_TMP! Check logs for more detail." "ERROR"
+		panic 1
+	fi
+
+	# Creates the $COMP_SRC_SPLIT array.
+	IFS=$COMP_DEL read -ra COMP_SRC_SPLIT <<< "$COMP_SRC"
+
+    # Make sure the source string is splitable.
+    if [[ ${#COMP_SRC_SPLIT[@]} == 1 ]]; then
+        log "Compression source string is NOT splitable by delimiter '$COMP_DEL'! Make sure to define the correct delimiter and/or define/split the correct source." "ERROR"
+        panic 1
+    fi
+
+	# Loop over the split array.
+	for elem in "${COMP_SRC_SPLIT[@]}"
+	do
+		# Make sure the path to compress exists.
+		if ! [ -d $elem ]; then
+			log "Path '$elem' doesn't exist! Skipping this one." "WARNING"
+			continue
+		fi
+
+		# For every elem split the path by delimiter '/'.
+		# This returns the "real" name of the destination.
+		#  eg. /var/log/backupper/ -> backupper.tar.bz2
+		#
+		IFS='/' read -ra dest_arr <<< "$elem"
+
+		arr_len=${#dest_arr[@]}
+		dest_elem=${dest_arr[$arr_len - 1]}
+
+		# Construct the destinatino path.
+		dest="$COMP_TMP$dest_elem.tar.bz2"
+		# Compress each element.
+		log "Start compressing [$elem -> $dest]" "DEBUG"
+		# Try to compress the files/folders.
+		{
+			tar -cjvf $dest $elem > /dev/null 2>&1
+		} || {
+			log "Could not compress file/folder [$elem]" "WARNING"
+			error=1
+		}
+	done
+    # Check if any errors occured.
+    if [[ $error == 1 ]]; then
+        log "Something went wrong with the compression. Check the logs for more information!" "ERROR"
+        panic 1
+    fi
+fi
+
 
 log "Starting rSnapshot job ... [$JOB]" "INFO"
 {
