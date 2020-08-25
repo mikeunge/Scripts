@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # backupper.sh
-# version: 1.0.3
+# version: 1.0.3.1
 #
 # Author:	Ungerböck Michele
 # Github:	github.com/mikeunge
@@ -38,8 +38,15 @@ log() {
 
     # Get the current datetime.
     cur_datetime=$(date +'%d.%m.%Y %T')
-    # Write the message to the log file.
-    echo "${priority} : [$cur_datetime] : ${message}" >> $LOG_FILE
+
+    # Check if file logging is enabled, else echo to stdout.
+    if [[ $LOG_ENABLED == 1 ]]; then
+    	# Write the message to the log file.
+    	echo "[$cur_datetime] :: ${priority} :: ${message}" >> $LOG_FILE
+    else
+	# Write the message to stdout.
+	echo "[$cur_datetime] :: ${priority} :: ${message}"
+    fi
 }
 
 send_email() {

@@ -20,3 +20,4 @@ The script needs **bash**, **smb/cifs**, **rsnapshot** and an *e-mail* client li
 - [x] Add ***CHANGELOG.md***
 - [ ] More configuration possibilities
 - [ ] Re-Do the ***README.md*** file
+- [ ] Add skip option for network mount
