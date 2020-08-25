@@ -99,6 +99,26 @@ panic() {
     esac
 }
 
+compress() {
+	err=0
+	if [ -z $1 ]; then
+		log "No source provided!" "WARNING"
+		err=1
+	fi
+	if [ -z $2 ]; then
+		log "No destination provided!" "WARNING"
+		err=1
+	fi
+
+	# Check for errors.
+	if [[ $err == 1 ]]; then
+		log "Some values where not provided, please check the log for more information." "ERROR"
+	else
+		log "Compressing [$1 -> $2]" "INFO"
+		tar -cPjf $2 $1
+	fi
+}
+
 # Check if the log_rotate is set.
 # If so, remove the defined logs for cleaner output.
 if [[ $LOG_ROTATE == 1 ]]; then
@@ -213,10 +233,8 @@ if [[ $COMPRESS == 1 ]]; then
 		# Construct the destinatino path.
 		dest="$COMP_TMP$dest_elem.tar.bz2"
 		# Compress each element.
-		log "Start compressing [$elem -> $dest]" "DEBUG"
-		# Try to compress the files/folders.
 		{
-			tar -cjvf $dest $elem > /dev/null 2>&1
+			compress $elem $dest &
 		} || {
 			log "Could not compress file/folder [$elem]" "WARNING"
 			error=1
