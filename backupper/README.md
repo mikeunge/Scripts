@@ -16,8 +16,9 @@ The script needs **bash**, **smb/cifs**, **rsnapshot** and an *e-mail* client li
 
 ### Todo
 
-- [ ] Better documentation
+- [x] Better documentation
 - [x] Add ***CHANGELOG.md***
 - [ ] More configuration possibilities
-- [ ] Re-Do the ***README.md*** file
+- [x] Re-Do the ***README.md*** file
 - [ ] Add skip option for network mount
+- [x] Add routine for delting /tmp files

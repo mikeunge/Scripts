@@ -40,12 +40,12 @@ log() {
     cur_datetime=$(date +'%d.%m.%Y %T')
 
     # Check if file logging is enabled, else echo to stdout.
-    if [[ $LOG_ENABLED == 1 ]]; then
+    if [[ $LOG_ENABLE == 1 ]]; then
     	# Write the message to the log file.
     	echo "[$cur_datetime] :: ${priority} :: ${message}" >> $LOG_FILE
     else
-	# Write the message to stdout.
-	echo "[$cur_datetime] :: ${priority} :: ${message}"
+	    # Write the message to stdout.
+	    echo "[$cur_datetime] :: ${priority} :: ${message}"
     fi
 }
 
@@ -65,6 +65,7 @@ send_email() {
     esac
     # Send the email;
     eval $mail_str
+    log "send_mail() returned with $?." "DEBUG"
 }
 
 panic() {
@@ -109,13 +110,50 @@ compress() {
 		log "No destination provided!" "WARNING"
 		err=1
 	fi
+	
+	# Define variables for better understanding.
+	src=$1
+	dest=$2
+
+	# Routine for deleting the existing src.
+	#
+	if [ -d $dest ]; then
+		# Check if the trigger is defined.
+        	if [[ $COMP_DEL == 1 ]]; then
+            		log "Trying to delete [$dest]." "DEBUG"
+			{
+            			rm -rf $dest 2>&1 /dev/null
+			} || {
+				log "An error occured while deleting [$dest]" "WARNING"
+				err=1
+			}
+            	if [[ $? == 0 ]]; then
+                	log "File $dest deleted successfully." "DEBUG"
+            	else
+                	log "Could not delete $dest." "WARNING"
+			err=1
+            	fi
+        fi
+    	else 
+        	log "Destination doesn't exist. [$dest]" "DEBUG"
+    	fi
 
 	# Check for errors.
 	if [[ $err == 1 ]]; then
-		log "Some values where not provided, please check the log for more information." "ERROR"
+		log "One ore more errors occured, please check the log for more information." "ERROR"
 	else
-		log "Compressing [$1 -> $2]" "INFO"
-		tar -cPjf $2 $1
+		log "Compressing [$src -> $dest]" "INFO"
+		# Suppress warning "file-changed".
+ 	        # This flag needs to be set, it ignores if file changes occured.
+        	# If it detects a change, it will simply ignore it, else it would need manual accaptance (eg. ENTER).
+		tar --warning=no-file-changed -cPjf $dest $src 2>&1 /dev/null
+        	return_code=$?
+		# Check the 'tar' return code.
+		if [[ $return_code == 0 ]]; then
+			log "Compression [$src -> $dest] succeeded." "INFO"
+		else
+			log "An error occured while compressing [$src -> $dest], 'tar' returned with error code $return_code." "WARNING"
+		fi
 	fi
 }
 
@@ -135,6 +173,7 @@ if [[ $LOG_ROTATE == 1 ]]; then
     done
 fi
 
+# Start of the script.
 log "*.backupper.sh start.*" "INFO"
 log "Configfile => $CONFIG_FILE." "INFO"
 
@@ -211,7 +250,6 @@ if [[ $COMPRESS == 1 ]]; then
         log "Compression source string is NOT splitable by delimiter '$COMP_DEL'! Make sure to define the correct delimiter and/or define/split the correct source." "ERROR"
         panic 1
     fi
-
 	# Loop over the split array.
 	for elem in "${COMP_SRC_SPLIT[@]}"
 	do
@@ -240,6 +278,8 @@ if [[ $COMPRESS == 1 ]]; then
 			error=1
 		}
 	done
+	# Waiting for the compress() function to finish its tasks.
+	wait
     # Check if any errors occured.
     if [[ $error == 1 ]]; then
         log "Something went wrong with the compression. Check the logs for more information!" "ERROR"
@@ -252,16 +292,16 @@ log "Starting rSnapshot job ... [$JOB]" "INFO"
 {
     # Run the rsnapshot backup job.
     cmd="$RSNAPSHOT $JOB"
-    output=`$cmd`   
+    output=`$cmd`
     # Check if the rsnapshot output is empty or not.
     if [[ $output != "" ]]; then
-        log "$output" "INFO"
+        log "$output" "DEBUG"
     else
-        log "rSnapshot didn't return any output." "WARNING"
+        log "rSnapshot didn't return any output." "INFO"
     fi
 } || {
     # Built a wrapper around a rsnapshot error that happens if a file changes while rsnapshot runs (return_val: 2).
-    if [ $? -eq 0 ] -eq 2 ]; then
+    if [[ $? == 0 ]]; then
         log "Backup complete. No warnings/errors occured." "INFO"
     else
         log "rSnapshot retured with an error (code: $?), please check the rSnapshot logs for more information." "ERROR"
