@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # backupper.sh
-# version: 1.0.3
+# version: 1.0.3.1
 #
 # Author:	Ungerböck Michele
 # Github:	github.com/mikeunge
@@ -38,8 +38,15 @@ log() {
 
     # Get the current datetime.
     cur_datetime=$(date +'%d.%m.%Y %T')
-    # Write the message to the log file.
-    echo "${priority} : [$cur_datetime] : ${message}" >> $LOG_FILE
+
+    # Check if file logging is enabled, else echo to stdout.
+    if [[ $LOG_ENABLE == 1 ]]; then
+    	# Write the message to the log file.
+    	echo "[$cur_datetime] :: ${priority} :: ${message}" >> $LOG_FILE
+    else
+	    # Write the message to stdout.
+	    echo "[$cur_datetime] :: ${priority} :: ${message}"
+    fi
 }
 
 send_email() {
@@ -58,6 +65,7 @@ send_email() {
     esac
     # Send the email;
     eval $mail_str
+    log "send_mail() returned with $?." "DEBUG"
 }
 
 panic() {
@@ -92,6 +100,63 @@ panic() {
     esac
 }
 
+compress() {
+	err=0
+	if [ -z $1 ]; then
+		log "No source provided!" "WARNING"
+		err=1
+	fi
+	if [ -z $2 ]; then
+		log "No destination provided!" "WARNING"
+		err=1
+	fi
+	
+	# Define variables for better understanding.
+	src=$1
+	dest=$2
+
+	# Routine for deleting the existing src.
+	#
+	if [ -d $dest ]; then
+		# Check if the trigger is defined.
+        	if [[ $COMP_DEL == 1 ]]; then
+            		log "Trying to delete [$dest]." "DEBUG"
+			{
+            			rm -rf $dest 2>&1 /dev/null
+			} || {
+				log "An error occured while deleting [$dest]" "WARNING"
+				err=1
+			}
+            	if [[ $? == 0 ]]; then
+                	log "File $dest deleted successfully." "DEBUG"
+            	else
+                	log "Could not delete $dest." "WARNING"
+			err=1
+            	fi
+        fi
+    	else 
+        	log "Destination doesn't exist. [$dest]" "DEBUG"
+    	fi
+
+	# Check for errors.
+	if [[ $err == 1 ]]; then
+		log "One ore more errors occured, please check the log for more information." "ERROR"
+	else
+		log "Compressing [$src -> $dest]" "INFO"
+		# Suppress warning "file-changed".
+ 	        # This flag needs to be set, it ignores if file changes occured.
+        	# If it detects a change, it will simply ignore it, else it would need manual accaptance (eg. ENTER).
+		tar --warning=no-file-changed -cPjf $dest $src 2>&1 /dev/null
+        	return_code=$?
+		# Check the 'tar' return code.
+		if [[ $return_code == 0 ]]; then
+			log "Compression [$src -> $dest] succeeded." "INFO"
+		else
+			log "An error occured while compressing [$src -> $dest], 'tar' returned with error code $return_code." "WARNING"
+		fi
+	fi
+}
+
 # Check if the log_rotate is set.
 # If so, remove the defined logs for cleaner output.
 if [[ $LOG_ROTATE == 1 ]]; then
@@ -108,6 +173,7 @@ if [[ $LOG_ROTATE == 1 ]]; then
     done
 fi
 
+# Start of the script.
 log "*.backupper.sh start.*" "INFO"
 log "Configfile => $CONFIG_FILE." "INFO"
 
@@ -184,7 +250,6 @@ if [[ $COMPRESS == 1 ]]; then
         log "Compression source string is NOT splitable by delimiter '$COMP_DEL'! Make sure to define the correct delimiter and/or define/split the correct source." "ERROR"
         panic 1
     fi
-
 	# Loop over the split array.
 	for elem in "${COMP_SRC_SPLIT[@]}"
 	do
@@ -206,15 +271,15 @@ if [[ $COMPRESS == 1 ]]; then
 		# Construct the destinatino path.
 		dest="$COMP_TMP$dest_elem.tar.bz2"
 		# Compress each element.
-		log "Start compressing [$elem -> $dest]" "DEBUG"
-		# Try to compress the files/folders.
 		{
-			tar -cjvf $dest $elem > /dev/null 2>&1
+			compress $elem $dest &
 		} || {
 			log "Could not compress file/folder [$elem]" "WARNING"
 			error=1
 		}
 	done
+	# Waiting for the compress() function to finish its tasks.
+	wait
     # Check if any errors occured.
     if [[ $error == 1 ]]; then
         log "Something went wrong with the compression. Check the logs for more information!" "ERROR"
@@ -227,16 +292,16 @@ log "Starting rSnapshot job ... [$JOB]" "INFO"
 {
     # Run the rsnapshot backup job.
     cmd="$RSNAPSHOT $JOB"
-    output=`$cmd`   
+    output=`$cmd`
     # Check if the rsnapshot output is empty or not.
     if [[ $output != "" ]]; then
-        log "$output" "INFO"
+        log "$output" "DEBUG"
     else
-        log "rSnapshot didn't return any output." "WARNING"
+        log "rSnapshot didn't return any output." "INFO"
     fi
 } || {
     # Built a wrapper around a rsnapshot error that happens if a file changes while rsnapshot runs (return_val: 2).
-    if [ $? -eq 0 ] -eq 2 ]; then
+    if [[ $? == 0 ]]; then
         log "Backup complete. No warnings/errors occured." "INFO"
     else
         log "rSnapshot retured with an error (code: $?), please check the rSnapshot logs for more information." "ERROR"
