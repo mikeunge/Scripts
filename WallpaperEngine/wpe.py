@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-import sys
-import json
+import sys, json
 from os import walk, path, system
 from random import randint
+
 # check if DEBUG is set
 DEBUG = False
 if len(sys.argv) > 1:
@@ -54,8 +54,7 @@ def main(conf):
         print('No wallpapers found.')
         return
     if conf['random']:
-        wp = wallpapers[randint(0, len(wallpapers)-1)]  # get a random item from array
-        set_wallpaper(wp)
+        set_wallpaper(wallpapers[randint(0, len(wallpapers)-1)])
         return
     # check if the desired wallpaper is in the returned list
     wp = path.join(conf['wp_path'], conf['wp'])
