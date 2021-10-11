@@ -5,9 +5,11 @@ from random import randint
 
 
 # get_wallpaper :: takes the path where the wallpapers are stored and returns an array with all the available items.
-def get_wallpapers(path):
+def get_wallpapers(wp_path):
     f = []
-    for (_, _, filenames) in walk(path):
+    if wp_path[0] == '~':
+        wp_path = path.expanduser(wp_path)
+    for (_, _, filenames) in walk(wp_path):
         f.extend(filenames)
     return f
 
@@ -38,6 +40,9 @@ def main(conf):
 
 
 if __name__ == '__main__':
+    if path.isfile(path.expanduser('~/.config/wpe.json')):
+        #read the config file
+        pass
     # configure the scripts behaviour
     CONFIG = {
         'wp_path': '/home/mikeunge/Pictures/Wallpaper/',  # make sure to add the trailing slash
