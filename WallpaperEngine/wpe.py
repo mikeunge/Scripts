@@ -4,6 +4,11 @@ import sys
 import json
 from os import walk, path, system
 from random import randint
+# check if DEBUG is set
+DEBUG = False
+if len(sys.argv) > 1:
+    if sys.argv[1] == 'debug':
+        DEBUG = True
 
 
 # dbg :: print debug messages
@@ -14,12 +19,10 @@ def dbg(msg):
 
 # get_wallpaper :: takes the path where the wallpapers are stored and returns an array with all the available items.
 def get_wallpapers(wp_path):
-    f = []
-    if wp_path[0] == '~':
-        wp_path = path.expanduser(wp_path)
+    wp = []
     for (_, _, filenames) in walk(wp_path):
-        f.extend(filenames)
-    return f
+        wp = [wp_path + file for file in filenames]
+    return wp
 
 
 # set_wallpaper :: sets the wallpaper, as param it needs the FULL path to the wallpaper.
@@ -43,30 +46,27 @@ def load_config(file):
 
 
 def main(conf):
+    # expand the wp_path to an absolute path
+    if conf['wp_path'][0] == '~':
+        conf['wp_path'] = path.expanduser(conf['wp_path'])
     wallpapers = get_wallpapers(conf['wp_path'])
     if len(wallpapers) <= 0:
-        print('No wallpapers found')
+        print('No wallpapers found.')
         return
-
     if conf['random']:
         wp = wallpapers[randint(0, len(wallpapers)-1)]  # get a random item from array
-        set_wallpaper(path.join(conf['wp_path'], wp))   # joint the base path and the wallpaper
+        set_wallpaper(wp)
         return
-
     # check if the desired wallpaper is in the returned list
-    if conf['wp'] in wallpapers:
-        set_wallpaper(path.join(conf['wp_path'], conf['wp']))
+    wp = path.join(conf['wp_path'], conf['wp'])
+    if wp in wallpapers:
+        set_wallpaper(wp)
     else:
         # if we cannot find the image, we set random to true and run the script again
         dbg(f'wallpaper ({conf["wp"]}) not found, selecting random image')
         conf['random'] = True
         main(conf)
 
-
-DEBUG = False
-if len(sys.argv) > 1:
-    if sys.argv[1] == 'debug':
-        DEBUG = True
 
 if __name__ == '__main__':
     config_paths = ['wpe.json', '~/.config/wpe.json', '~/.config/wpe/wpe.json']
