@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
+import json
 from os import walk, path, system
 from random import randint
 
@@ -17,6 +18,13 @@ def get_wallpapers(wp_path):
 # set_wallpaper :: sets the wallpaper, as param it needs the FULL path to the wallpaper.
 def set_wallpaper(wallpaper):
     system(f'feh --bg-scale {wallpaper}')
+
+
+# load_config :: load a configuration file.
+def load_config(file):
+    with open(file, 'r') as f:
+        config = json.load(f)
+    return config 
 
 
 def main(conf):
@@ -40,13 +48,18 @@ def main(conf):
 
 
 if __name__ == '__main__':
-    if path.isfile(path.expanduser('~/.config/wpe.json')):
-        #read the config file
-        pass
-    # configure the scripts behaviour
-    CONFIG = {
-        'wp_path': '/home/mikeunge/Pictures/Wallpaper/',  # make sure to add the trailing slash
-        'wp': 'berserk.png',   # if you want a fixed wp, enter the name here, not the path!
-        'random': False,    # set this to 'False' if you want to used a fixed wp
-    }
-    main(CONFIG)
+    config_paths = ['wpe.json', '~/.config/wpe.json', '~/.config/wpe/wpe.json']
+    config = {}
+    for c in config_paths:
+        if c[0] == '~':
+            c = path.expanduser(c)
+        if path.isfile(c):
+            config = load_config(c)
+            break
+    if config == {}:
+        config = {
+            'wp_path': '~/Pictures/Wallpaper/',  # make sure to add the trailing slash
+            'wp': 'berserk.png',   # if you want a fixed wp, enter the name here, not the path!
+            'random': False,    # set this to 'False' if you want to used a fixed wp
+        }
+    main(config)
