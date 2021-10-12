@@ -1,0 +1,23 @@
+#!/usr/bin/bash
+# vim: filetype=sh
+
+if [ "$EUID" -ne 0 ];then
+	printf "Please run as root\n"
+	exit 1
+fi
+
+if ! [ -f "wpe.py" ]; then
+	printf "Script not found\n"
+	exit 1
+fi
+
+chmod +x wpe.py
+cp wpe.py /usr/bin/wpe
+
+if [ "$?" -eq 0 ]; then
+	printf "'wpe.py' is now available as wpe\n"
+	exit 0
+else
+	printf "Something went wrong\n"
+	exit 1
+fi
