@@ -82,5 +82,20 @@ if __name__ == '__main__':
             'wp': '',   # if you want a fixed wp, enter the name here
             'random': True,    # set this to 'False' if you want to used a fixed wp
         }
+    # check if user specifies a wallpaper path via args
+    if len(sys.argv) < 1: 
+        if sys.argv[1] == '--set' or sys.argv[1] == '-s':
+            try:
+                wp = sys.argv[2]
+                if path.isfile(wp):
+                    config['wp'] = wp
+                    config['random'] = False
+                else:
+                    print('Please provide a valid wallpaper and make sure you provide the full path to it.')
+                    exit(1)
+            except Exception as ex:
+                print('Sorry but something is wrong with your wallpaper path. Please try again. :)')
+                dbg(f'Error: {ex}')
+                exit(1)
     dbg(f'config dump: {config}')
     main(config)
