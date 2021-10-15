@@ -76,23 +76,21 @@ if __name__ == '__main__':
         if path.isfile(c):
             config = load_config(c)
             break
-    if config == {}:
+    if config == {}:    # if the config is empty, use fallback config
         config = {
             'wp_path': '~/Pictures/Wallpaper/',  # make sure to add the trailing slash
             'wp': '',   # if you want a fixed wp, enter the name here
             'random': True,    # set this to 'False' if you want to used a fixed wp
         }
+
     # check if user specifies a wallpaper path via args
     if len(sys.argv) > 1 and (sys.argv[1] == '--set' or sys.argv[1] == '-s'):
         try:
             wp = sys.argv[2]
             config['wp'] = wp
-            dbg(f'changing wp to {wp}')
             config['random'] = False
-            dbg('disable random')
-        except Exception as ex:
-            print('Sorry but something is wrong with your wallpaper path. Please try again. :)')
-            dbg(f'Error: {ex}')
-            exit(1)
+            dbg(f'changing wp to {wp} - disable random')
+        except IndexError as ix:
+            dbg(f'Error: {ix}')
     dbg(f'config dump: {config}')
     main(config)
