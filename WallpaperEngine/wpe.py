@@ -7,7 +7,7 @@ from random import randint
 # check if DEBUG is set
 DEBUG = False
 if len(sys.argv) > 1:
-    DEBUG = [ x == 'debug' for x in sys.argv]
+    DEBUG = True in [ x == 'debug' for x in sys.argv]
 
 
 # dbg :: print debug messages
