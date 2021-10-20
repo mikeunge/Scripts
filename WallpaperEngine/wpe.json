@@ -1,5 +1,7 @@
 {
     "wp_path": "~/Pictures/Wallpaper/",
     "wp": "berserk.jpg",
-    "random": true
+    "random": true,
+    "remember": 10,
+    "remember_path": "~/.wpe_store"
 }
