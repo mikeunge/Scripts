@@ -18,18 +18,17 @@ def dbg(msg: str):
         print(f'[debug] {msg}')
 
 
-# get_wallpaper(wp_path: str) -> list[str]
+# get_wallpaper(wp_path: str, extension: tuple) -> list[str]
 #
 # @desc     Loads all the files inside the provided folder path and returns a list.
 #
 # @params   wp_path     -> path where the wallpapers are located
+#           extensions  -> tuple of file extensions to use
 #
 # @return   list[str]   -> array with all the images
-def get_wallpapers(wp_path: str) -> list:
-    # TODO: add a filter for filetypes
-    wp = []
+def get_wallpapers(wp_path: str, extensions: tuple) -> list:
     for (_, _, filenames) in walk(wp_path):
-        wp = [wp_path + file for file in filenames]
+        wp = [wp_path + file for file in filenames if file.endswith(extensions)]
     return wp
 
 
@@ -91,7 +90,7 @@ def check_remember_list(file: str, wp: str) -> bool:
 # @params   file    -> path to the remember file
 #           wp      -> wallpaper to write
 #
-# @return   int     -> count of lines
+# @return   int     -> count of items 
 def append_remember_list(file: str, wp: str) -> int:
     if path.isfile(file):
         with open(file, 'r+') as f:
@@ -143,7 +142,7 @@ def main(conf: dict):
         conf['wp_path'] = path.expanduser(conf['wp_path'])
     if conf['remember_path'][0] == '~':
         conf['remember_path'] = path.expanduser(conf['remember_path'])
-    wallpapers = get_wallpapers(conf['wp_path'])
+    wallpapers = get_wallpapers(conf['wp_path'], tuple(conf['extensions']))
     if len(wallpapers) <= 0:
         print('No wallpapers found.')
         return
@@ -184,6 +183,12 @@ if __name__ == '__main__':
             'random': True,                         # set this to 'False' if you want to used a fixed wp
             'remember': 5,                          # how many iterations should we remember your last set wallpaper(s)
             'remember_path': '~/.wpe_store',        # the path where we remember the set wallpapers
+            'extensions': [                         # enter the file extensions to use
+                '.jpg',
+                '.png',
+                '.webp',
+                '.gif'
+            ]
         }
     # check if user specifies a wallpaper path via args
     if len(sys.argv) > 1 and (sys.argv[1] == '--set' or sys.argv[1] == '-s'):
