@@ -131,17 +131,27 @@ def pop_remember_list(file: str, max: int, cur: int):
     pop_remember_list(file, max, cur-1)
 
 
+# serialize_path(arg_path: str) -> str
+#
+# @desc     Serialize the provided path
+#
+# @params   arg_path-> path to serialize
+#
+# @return   str     -> the serialized path
+def serialize_path(arg_path: str) -> str:
+    if arg_path[0] == '~':
+        return arg_path = path.expanduser(arg_path)
+    return arg_path
+
+
 # main(conf: dict)
 #
 # @desc     The main function, this manages the behaviour of this app.
 #
 # @params   config  -> config dict
 def main(conf: dict):
-    # expand the wp_path to an absolute path
-    if conf['wp_path'][0] == '~':
-        conf['wp_path'] = path.expanduser(conf['wp_path'])
-    if conf['remember_path'][0] == '~':
-        conf['remember_path'] = path.expanduser(conf['remember_path'])
+    conf['wp_path'] = serialize_path(conf['wp_path'])
+    conf['remember_path'] = serialize_path(conf['remember_path'])
     wallpapers = get_wallpapers(conf['wp_path'], tuple(conf['extensions']))
     if len(wallpapers) <= 0:
         print('No wallpapers found.')
@@ -171,8 +181,7 @@ if __name__ == '__main__':
     config_paths = ['wpe.json', '~/.config/wpe.json', '~/.config/wpe/wpe.json']
     config = {}
     for c in config_paths:
-        if c[0] == '~':
-            c = path.expanduser(c)
+        c = serialize_path(c)
         if path.isfile(c):
             config = load_config(c)
             break
