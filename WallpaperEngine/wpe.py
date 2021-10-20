@@ -37,11 +37,17 @@ def get_wallpapers(wp_path: str, extensions: tuple) -> list:
 # @desc     Set the provided wallpaper (uses feh)self.
 #
 # @params   wallpaper   -> full path to the wallpaper
-def set_wallpaper(wallpaper: str):
+#           gif         -> if it's a gif, render it?
+def set_wallpaper(wallpaper: str, gif: bool):
     # if wallpaper has whitespaces, make it linux (feh) friendly
     wallpaper = wallpaper.replace(" ", "\\ ")
     dbg(f'Setting wallpaper: {wallpaper}')
-    system(f'feh --bg-scale {wallpaper}')
+    if gif:
+        # requires back4.sh, can be found in ./include/
+        # run the installer with --gif to enable/install it
+        system(f'back4 auto {wallpaper} &')
+    else:
+        system(f'feh --bg-scale {wallpaper} &')
 
 
 # load_config(file: str) -> dict
@@ -140,8 +146,20 @@ def pop_remember_list(file: str, max: int, cur: int):
 # @return   str     -> the serialized path
 def serialize_path(arg_path: str) -> str:
     if arg_path[0] == '~':
-        return arg_path = path.expanduser(arg_path)
+        return path.expanduser(arg_path)
     return arg_path
+
+
+# render(wallpaper: str, render: bool) -> bool
+#
+# @desc     Check if we should render gifs or not and if the wp is a gif.
+#
+# @params   wallpaper   -> the wallpaper in question
+#           render      -> is it allowed (config)
+#
+# @return   bool        -> True: render / False: don't
+def render(wallpaper: str, render: bool) -> bool:
+    return wallpaper.endswith('.gif') and render == True
 
 
 # main(conf: dict)
@@ -160,7 +178,8 @@ def main(conf: dict):
         while True:
             wallpaper = wallpapers[randint(0, len(wallpapers)-1)]
             if not check_remember_list(conf['remember_path'], wallpaper):
-                set_wallpaper(wallpaper)
+                gif = render(wallpaper, conf['render_gif'])
+                set_wallpaper(wallpaper, gif)
                 cur_list_lines = append_remember_list(conf['remember_path'], wallpaper)
                 pop_remember_list(conf['remember_path'], conf['remember'], cur_list_lines)
                 break
@@ -169,7 +188,8 @@ def main(conf: dict):
         wp = path.join(conf['wp_path'], conf['wp'])
     # check if the desired wallpaper is in the returned list
     if wp in wallpapers:
-        set_wallpaper(wp)
+        gif = render(wp, conf['render_gif'])
+        set_wallpaper(wp, gif)
     else:
         # if we cannot find the image, we set random to true and run the script again
         dbg(f'Wallpaper ({conf["wp"]}) not found, selecting random image')
@@ -192,12 +212,8 @@ if __name__ == '__main__':
             'random': True,                         # set this to 'False' if you want to used a fixed wp
             'remember': 5,                          # how many iterations should we remember your last set wallpaper(s)
             'remember_path': '~/.wpe_store',        # the path where we remember the set wallpapers
-            'extensions': [                         # enter the file extensions to use
-                '.jpg',
-                '.png',
-                '.webp',
-                '.gif'
-            ]
+            'render_gif': False,                     # if the wallpaper is a gif, render it or not? (increases cpu usage)
+            'extensions': ['.jpg', '.png', '.webp'] # enter the file extensions to use
         }
     # check if user specifies a wallpaper path via args
     if len(sys.argv) > 1 and (sys.argv[1] == '--set' or sys.argv[1] == '-s'):

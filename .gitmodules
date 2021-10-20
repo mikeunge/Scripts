@@ -1,0 +1,3 @@
+[submodule "WallpaperEngine/WallpaperEngine/include/foo-Wallpaper-Feh-Gif"]
+	path = WallpaperEngine/WallpaperEngine/include/foo-Wallpaper-Feh-Gif
+	url = https://github.com/thomas10-10/foo-Wallpaper-Feh-Gif.git
