@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 import sys, json
-from os import walk, path, system
+from os import walk, path, system, remove
 from random import randint
 
 # check if DEBUG is set
@@ -32,6 +32,24 @@ def get_wallpapers(wp_path: str, extensions: tuple) -> list:
     return wp
 
 
+# kill_gif_if_running(pidfile: str)
+#
+# @desc     If a gif is currently running, we need to kill it beforehand,
+#           else, get spawn another process (gif) and the system starts to lag. 
+#
+# @params   pidfile     -> path to file location
+def kill_gif_if_running(pidfile: str):
+    # if we load a gif, we need to:
+    #   1. kill the current running gif (if exist)
+    #       (if we don't, the whole system lags and is un-usable)
+    #   2. set the new wallpaper and write it's pid into pidfile
+    if path.isfile(pidfile):
+        with open(pidfile, 'r') as f:
+            pid = f.readline()
+        system(f'kill {pid} >> /dev/null')
+        remove(pidfile)
+
+
 # set_wallpaper(wallpaper: str)
 #
 # @desc     Set the provided wallpaper (uses feh)self.
@@ -41,11 +59,11 @@ def get_wallpapers(wp_path: str, extensions: tuple) -> list:
 def set_wallpaper(wallpaper: str, gif: bool):
     # if wallpaper has whitespaces, make it linux (feh) friendly
     wallpaper = wallpaper.replace(" ", "\\ ")
+    pidfile = '/tmp/back4.pid'
+    kill_gif_if_running(pidfile)
     dbg(f'Setting wallpaper: {wallpaper}')
     if gif:
-        # requires back4.sh, can be found in ./include/
-        # run the installer with --gif to enable/install it
-        system(f'back4 auto {wallpaper} &')
+        system(f'back4 auto {wallpaper} >> /dev/null & echo $! > {pidfile} &')
     else:
         system(f'feh --bg-scale {wallpaper} &')
 
