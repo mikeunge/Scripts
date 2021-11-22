@@ -2,12 +2,13 @@
 # -*- coding: utf-8 -*-
 import sys, json
 from os import walk, path, system, remove
-from random import randint
+from random import randint, choice
+
 
 # check if DEBUG is set
 DEBUG = False
 if len(sys.argv) > 1:
-    DEBUG = True in [ x == 'debug' for x in sys.argv]
+    DEBUG = True in [x == 'debug' for x in sys.argv]
 
 
 # dbg(msg: str)
@@ -28,8 +29,8 @@ def dbg(msg: str):
 # @return   list[str]   -> array with all the images
 def get_wallpapers(wp_path: str, extensions: tuple) -> list:
     for (_, _, filenames) in walk(wp_path):
-        wp = [wp_path + file for file in filenames if file.endswith(extensions)]
-    return wp
+        wp_list = [wp_path + file for file in filenames if file.endswith(extensions)]
+    return wp_list
 
 
 # kill_gif_if_running(pidfile: str)
@@ -79,11 +80,11 @@ def load_config(file: str) -> dict:
     dbg(f'Loading config: {file}')
     try:
         with open(file, 'r') as f:
-            config = json.load(f)
+            conf = json.load(f)
     except Exception as e:
         print(f'Could not load config file ({file}).\nError: {e}')
-        config = {}
-    return config 
+        conf = {}
+    return conf
 
 
 # check_remember_list(file: str, wp: str) -> bool
@@ -125,11 +126,11 @@ def append_remember_list(file: str, wp: str) -> int:
     else:
         # if the file does not exist, we create it and write to it
         with open(file, 'w') as f:
-             print(wp, file=f)
+            print(wp, file=f)
         dbg(f'File {file} successfully created')
     with open(file, 'r') as f:
         data = f.read().split(';')
-    return len(data)-1
+    return len(data) - 1
 
 
 # pop_remember_list(file: str, max: int, cur: int)
@@ -149,10 +150,10 @@ def pop_remember_list(file: str, max: int, cur: int):
         data = f.read().split(';')
     with open(file, 'w') as f:
         for item in data[:-2]:
-            f.write(item+';')
-    dbg(f'Removed {data[len(data)-2]} successfully from {file}')
+            f.write(item + ';')
+    dbg(f'Removed {data[len(data) - 2]} successfully from {file}')
     # recursive function, so if the max changed we get to remove all the overhead
-    pop_remember_list(file, max, cur-1)
+    pop_remember_list(file, max, cur - 1)
 
 
 # serialize_path(arg_path: str) -> str
@@ -168,16 +169,16 @@ def serialize_path(arg_path: str) -> str:
     return arg_path
 
 
-# render(wallpaper: str, render: bool) -> bool
+# render(wp_gif: str, render: bool) -> bool
 #
 # @desc     Check if we should render gifs or not and if the wp is a gif.
 #
-# @params   wallpaper   -> the wallpaper in question
-#           render      -> is it allowed (config)
+# @params   wp_gif      -> the wallpaper in question
+#           gif_allowed -> is it allowed (config)
 #
 # @return   bool        -> True: render / False: don't
-def render(wallpaper: str, render: bool) -> bool:
-    return wallpaper.endswith('.gif') and render == True
+def render(wp_gif: str, gif_allowed: bool) -> bool:
+    return wp_gif.endswith('.gif') and gif_allowed
 
 
 # main(conf: dict)
@@ -194,15 +195,17 @@ def main(conf: dict):
         return
     if conf['random']:
         while True:
-            wallpaper = wallpapers[randint(0, len(wallpapers)-1)]
-            if not check_remember_list(conf['remember_path'], wallpaper):
-                gif = render(wallpaper, conf['render_gif'])
-                set_wallpaper(wallpaper, gif)
-                cur_list_lines = append_remember_list(conf['remember_path'], wallpaper)
+            wp = wallpapers[randint(0, len(wallpapers) - 1)]
+            if not check_remember_list(conf['remember_path'], wp):
+                gif = render(wp, conf['render_gif'])
+                set_wallpaper(wp, gif)
+                cur_list_lines = append_remember_list(conf['remember_path'], wp)
                 pop_remember_list(conf['remember_path'], conf['remember'], cur_list_lines)
                 break
         return
-    if not path.isfile(conf['wp']):     # check if wp is already a valid path
+    if type(conf['wp']) is list:
+        conf['wp'] = choice(conf['wp'])
+    if not path.isfile(conf['wp']):  # check if wp is already a valid path
         wp = path.join(conf['wp_path'], conf['wp'])
     # check if the desired wallpaper is in the returned list
     if wp in wallpapers:
@@ -223,24 +226,25 @@ if __name__ == '__main__':
         if path.isfile(c):
             config = load_config(c)
             break
-    if config == {}:    # if the config is empty, use fallback config
+    if config == {}:  # if the config is empty, use fallback config
         config = {
-            'wp_path': '~/Pictures/Wallpaper/',     # make sure to add the trailing slash
-            'wp': '',                               # if you want a fixed wp, enter the name here
-            'random': True,                         # set this to 'False' if you want to used a fixed wp
-            'remember': 5,                          # how many iterations should we remember your last set wallpaper(s)
-            'remember_path': '~/.wpe_store',        # the path where we remember the set wallpapers
-            'render_gif': False,                     # if the wallpaper is a gif, render it or not? (increases cpu usage)
-            'extensions': ['.jpg', '.png', '.webp'] # enter the file extensions to use
+            'wp_path': '~/Pictures/Wallpaper/',  # make sure to add the trailing slash
+            'wp': [''],  # if you want a fixed wp, enter the name here
+            'random': True,  # set this to 'False' if you want to used a fixed wp
+            'remember': 5,  # how many iterations should we remember your last set wallpaper(s)
+            'remember_path': '~/.wpe_store',  # the path where we remember the set wallpapers
+            'render_gif': False,  # if the wallpaper is a gif, render it or not? (increases cpu usage)
+            'extensions': ['.jpg', '.png', '.webp']  # enter the file extensions to use
         }
     # check if user specifies a wallpaper path via args
     if len(sys.argv) > 1 and (sys.argv[1] == '--set' or sys.argv[1] == '-s'):
         try:
-            wp = sys.argv[2]
-            config['wp'] = wp
+            wallpaper = sys.argv[2]
+            config['wp'] = wallpaper
             config['random'] = False
-            dbg(f'Changing wp to {wp} - disable random')
+            dbg(f'Changing wp to {wallpaper} - disable random')
         except IndexError as ix:
             dbg(f'Error: {ix}')
+            exit(1)
     dbg(f'Config dump: {config}')
     main(config)

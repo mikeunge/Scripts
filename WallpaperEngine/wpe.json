@@ -1,6 +1,10 @@
 {
     "wp_path": "~/Pictures/Wallpaper/",
-    "wp": "my_wallaper_to_set.jpg",
+    "wp": [
+        "wp1.jpg",
+        "wp2.jpg",
+        "wp3.jpg"
+    ],
     "random": true,
     "remember": 10,
     "remember_path": "~/.wpe_store",
