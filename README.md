@@ -1,9 +1,5 @@
 # Scripts
 
-This is a *collection* of scripts I wrote for my own and/or for production environments. 🧙‍♂️
+__This repo is collection of scripts I wrote for varias usecases.__
 
-
-
-### Todo
-
-- [ ] Add a **README.md** file to all subfolders
+I need to put them into seperate folders and will generally structure this repo a bit differently, but for now this is what u get. 
