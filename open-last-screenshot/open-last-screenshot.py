@@ -3,7 +3,7 @@ import os
 import subprocess
 from datetime import datetime
 
-DEBUG=True
+DEBUG=False
 SCREENSHOT_PATH="/home/mike/Pictures/Screenshots"
 IMAGE_PREVIEW_BIN="/usr/bin/feh"
 ALLOWED_EXTENSIONS=["jpg", "jpeg", "png", "gif"]
