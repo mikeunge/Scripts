@@ -1,5 +1,4 @@
-#!/usr/bin/bash
-
+#!/usr/bin/env bash
 
 # get the spotify status (playing, paused)
 status=$(playerctl -p spotify status)
