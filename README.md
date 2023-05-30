@@ -2,4 +2,10 @@
 
 __This repo is collection of scripts I wrote for varias usecases.__
 
-I need to put them into seperate folders and will generally structure this repo a bit differently, but for now this is what u get.
+## Todo
+
+- [ ] Create installer script
+    1. Install indivdual scripts
+    2. Install all scripts at once
+- [ ] Create executer for indivdual scripts
+    1. Invoke only one script that invoces a given script w/o installing it first

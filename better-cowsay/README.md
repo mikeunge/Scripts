@@ -9,3 +9,4 @@ Better-Cowsay is a simple wrapper that chooses a random _cowfile_ on each invoca
 ## Todo
 
 - [ ] Finish installer
+- [ ] Re-Write this bitch in go (_for faster exec time_)

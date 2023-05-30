@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# @todo: add a cli param to load a specific cow-file
+
 function bettercowsay {
     NUMOFCOWS=`ls $HOME/.cowsay/cowfiles/ | tail -n +2 | wc -w`
     WHICHCOW=$((RANDOM%$NUMOFCOWS+1))
