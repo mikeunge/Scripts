@@ -1,13 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Notifier.sh
-# version 1.0.0
-#
-# Author:	Ungerböck Michele
-# Github:	github.com/mikeunge
-#
-# All rights reserved.
-#
+# Version 1.0.0
+# Author: @mikeunge
 # 
 # Run notify.sh with a parameter you want to hook on.
 # The script runs a "ps aux" and greps the output for the given parameter, when the process finishes you get a notification via e-mail.
