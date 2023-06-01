@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+
+BIN=better-cowsay
+BIN_DEST=/usr/bin
+BUILD_PATH=build
+CONFIG_FILE=better-cowsay.json
+CONFIG_PATH=$HOME/.config/
+COW_PATH=$HOME/.cowfiles/
+
+function build {
+    /usr/bin/env go build -o ./$BUILD_PATH/$BIN
+}
+
+function run {
+    /usr/bin/env go run ./main.go "$@"
+}
+
+function clean {
+    rm -rf ./build/
+}
+
+function install {
+    echo "Moving config & assets..."
+    cp -avr ./$CONFIG_FILE $CONFIG_PATH
+    mkdir -p $COW_PATH
+    cp -avr ./assets/* $COW_PATH
+    sudo cp -av ./$BUILD_PATH/$BIN $BIN_DEST
+}
+
+function uninstall {
+    rm -rf $CONFIG_PATH/$CONFIG_FILE
+    echo "removed: $CONFIG_PATH/$CONFIG_FILE"
+    rm -rf $COW_PATH
+    echo "removed: $COW_PATH"
+    sudo rm -f $BIN_DEST/$BIN
+    echo "removed: $BIN_DEST/$BIN"
+}
+
+function help {
+    echo "Available arguments:"
+    echo " - build"
+    echo " - run"
+    echo " - install"
+    echo " - uninstall"
+    echo " - clean"
+}
+
+ACTION=$1
+if [[ $ACTION == "build" ]]; then
+    clean
+    build
+elif [[ $ACTION == "clean" ]]; then
+    clean
+elif [[ $ACTION == "run" ]]; then
+    run "${@:2}"
+elif [[ $ACTION == "install" ]]; then
+    build
+    install
+elif [[ $ACTION == "uninstall" ]]; then
+    clean
+    uninstall
+else
+    help
+    exit 0
+fi
+
+echo "done."
