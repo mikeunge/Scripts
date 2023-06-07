@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+#
+# tt - A simple tool to automate timetrace start & stop when locking the screen.
+#
+
+CACHE_DIR="$HOME/.tt"
+PIDFILE="/tmp/tt_daemon.pid"
+ARGS="$@"
+
+# start the daemon if no pid is found
+if ! [ -e $PIDFILE ]; then
+  /usr/bin/tt_daemon &
+fi
+
+# check the start/stop cases - this will get triggered manually
+if [[ "$1" == "start" ]]; then
+  # cache the input
+  echo $ARGS > $CACHE_DIR
+fi
+
+# resume loads the cached argument and provides it as the 'new' args for timetrace
+# (used by daemon)
+if [[ "$1" == "resume" ]]; then
+  ARGS=`cat $CACHE_DIR`
+fi
+
+# remove the cache if tracking gets stopped on purpose
+if [[ "$1" == "stop" ]]; then
+  rm -f $CACHE_DIR
+  pid=`cat $PIDFILE`
+  kill -9 $pid > /dev/null
+fi
+
+# pause (used by daemon)
+if [[ "$1" == "pause" ]]; then
+  ARGS="stop"
+fi
+
+# exec timetrace
+/usr/bin/env timetrace $ARGS
