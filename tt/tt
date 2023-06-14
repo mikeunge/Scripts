@@ -28,7 +28,7 @@ fi
 if [[ "$1" == "stop" ]]; then
   rm -f $CACHE_DIR
   pid=`cat $PIDFILE`
-  kill -9 $pid > /dev/null
+  kill $pid
 fi
 
 # pause (used by daemon)
