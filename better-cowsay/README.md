@@ -36,4 +36,4 @@ _You can always edit the paths, simply change the variables in the ```make``` sc
 
 ## Todo
 
-- [ ] Provide the cowfile name you want to execute
+- [x] Provide the cowfile name you want to execute
