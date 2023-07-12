@@ -20,14 +20,14 @@ import (
 const (
 	appName        = "better-cowsay"
 	appDescription = "A better way of using cowsay."
-	appVersion     = "1.0.0"
+	appVersion     = "1.0.1"
 	appAuthor      = "@mikeunge"
 )
 
 var (
 	DEBUG      bool   = false
 	ConfigFile string = "~/.config/better-cowsay.json"
-	Cowfiles   string = ""
+	Cowfile    string = ""
 	log        *logger.Logger
 )
 
@@ -77,7 +77,7 @@ func configParser(configpath string) (Config, error) {
 	return config, nil
 }
 
-func getRandomCowfile(path string) (string, error) {
+func getCowfile(path string) (string, error) {
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
 		return "", err
@@ -87,16 +87,21 @@ func getRandomCowfile(path string) (string, error) {
 	var filename string
 	for _, file := range files {
 		if !file.IsDir() && strings.HasSuffix(file.Name(), ".cow") {
+			if len(Cowfile) > 0 && file.Name() == Cowfile {
+				log.InfoF("found %s in %s, selecting this cowfile!", file.Name(), path)
+				return fmt.Sprintf("%s/%s", path, file.Name()), nil
+			}
 			s = append(s, file.Name())
 		} else {
 			log.NoticeF("%s is not a cowfile", file.Name())
 		}
 	}
 
-	chosen := rand.Intn(len(s) - 0)
-	filename = s[chosen]
+	idx := rand.Intn(len(s) - 0)
+	filename = s[idx]
 
 	log.NoticeF("found %d cowfiles", len(s))
+	log.WarningF("didn't find %s in %s", Cowfile, path)
 	log.InfoF("the chosen one: %s", filename)
 
 	return fmt.Sprintf("%s/%s", path, filename), nil
@@ -185,7 +190,14 @@ func init() {
 		ConfigFile = serializePath(ConfigFile)
 	}
 	if len(*filename) >= 1 {
-		Cowfiles = *filename
+		n := strings.Split(*filename, ".")
+		if len(n) == 1 || n[len(n)-1] != "cow" {
+			Cowfile = *filename + ".cow"
+			log.InfoF("added cow extension to %s", *filename)
+		} else {
+			Cowfile = *filename
+		}
+		log.NoticeF("looking for %s", Cowfile)
 	}
 }
 
@@ -197,7 +209,7 @@ func main() {
 	// Serialize paths if needed
 	c.Cowfiles = serializePath(c.Cowfiles)
 
-	cowfile, err := getRandomCowfile(c.Cowfiles)
+	cowfile, err := getCowfile(c.Cowfiles)
 	if err != nil {
 		log.Errorf("something went wrong, are there any cowfiles? (error: %+v)", err.Error())
 	}
