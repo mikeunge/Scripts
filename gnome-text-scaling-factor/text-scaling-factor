@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+function print_help {
+    printf "text-scaling-factor(.sh)\n\n"
+    printf "\thelp\tThis output\n"
+    printf "\tup\tChanges factor to 1.5\n"
+    printf "\tdown\tChanges factor to 1.0\n"
+    exit 0
+}
+
+if [[ "$1" == "up" ]]; then
+    gsettings set org.gnome.desktop.interface text-scaling-factor 1.5
+elif [[ "$1" == "down" ]]; then
+    gsettings set org.gnome.desktop.interface text-scaling-factor 1.0
+elif [[ "$1" == "help" ]]; then
+    print_help
+else
+    printf "'%s' is not a valid command!\n\n" $1
+    print_help
+fi
