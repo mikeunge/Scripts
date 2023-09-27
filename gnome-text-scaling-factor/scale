@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 function print_help {
-    printf "text-scaling-factor(.sh)\n\n"
+    printf "scale(.sh)\n\n"
     printf "\thelp\tThis output\n"
     printf "\tup\tChanges factor to 1.5\n"
     printf "\tdown\tChanges factor to 1.0\n"
